@@ -1,0 +1,5 @@
+{
+  "title": "dots.tts-base",
+  "description": "2B-parameter fully continuous, end-to-end autoregressive text-to-speech with zero-shot voice cloning. https://huggingface.co/rednote-hilab/dots.tts-base",
+  "icon": "icon.png"
+}
