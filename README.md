@@ -25,7 +25,7 @@ First launch downloads model weights and runs a synthesis warmup — expect seve
 ### Windows notes
 
 - `pynini` (a dependency of `WeTextProcessing`, used for text normalization) has no official Windows wheels, so the installer uses a prebuilt community wheel from [billwuhao/pynini-windows-wheels](https://github.com/billwuhao/pynini-windows-wheels) and installs `WeTextProcessing` without dependencies.
-- `--optimize` (torch.compile acceleration) is disabled on Windows; generation works the same, just without the compiled steady-state speedup.
+- On NVIDIA GPUs, the installer adds [triton-windows](https://github.com/triton-lang/triton-windows) (Triton 3.4 for PyTorch 2.8) so `--optimize` (torch.compile acceleration) works on Windows too. On CPU/AMD Windows setups, `--optimize` is skipped.
 
 Use **Update** to pull the latest upstream code. Use **Reset** to remove the cloned `app` folder and reinstall from scratch.
 

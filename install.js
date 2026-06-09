@@ -55,6 +55,7 @@ module.exports = {
         params: {
           venv: "env",
           path: "app",
+          triton: true
         }
       }
     },
