@@ -14,6 +14,18 @@ module.exports = {
       }
     },
     {
+      when: "{{platform === 'win32'}}",
+      method: "shell.run",
+      params: {
+        venv: "env",
+        path: "app",
+        message: [
+          "uv pip install -e . --no-deps -c constraints/recommended.txt",
+        ]
+      }
+    },
+    {
+      when: "{{platform !== 'win32'}}",
       method: "shell.run",
       params: {
         venv: "env",

@@ -20,7 +20,12 @@ This launcher installs [rednote-hilab/dots.tts](https://github.com/rednote-hilab
    - Enter the text to synthesize.
    - Click **Generate**.
 
-First launch downloads model weights and runs optimization warmup — expect several minutes before the UI is ready.
+First launch downloads model weights and runs a synthesis warmup — expect several minutes before the UI is ready.
+
+### Windows notes
+
+- `pynini` (a dependency of `WeTextProcessing`, used for text normalization) has no official Windows wheels, so the installer uses a prebuilt community wheel from [billwuhao/pynini-windows-wheels](https://github.com/billwuhao/pynini-windows-wheels) and installs `WeTextProcessing` without dependencies.
+- `--optimize` (torch.compile acceleration) is disabled on Windows; generation works the same, just without the compiled steady-state speedup.
 
 Use **Update** to pull the latest upstream code. Use **Reset** to remove the cloned `app` folder and reinstall from scratch.
 
