@@ -12,7 +12,12 @@ module.exports = {
       params: {
         venv: "env",
         env: {
-          PYTHONUTF8: 1
+          PYTHONUTF8: 1,
+          // PyTorch 2.8 bug on Windows: StaticCudaLauncher parses the CUDA stream
+          // as a 32-bit C long and crashes with "OverflowError: Python int too large
+          // to convert to C long" (pytorch/pytorch#162430). Fall back to triton's
+          // own launcher instead. Harmless on other platforms.
+          TORCHINDUCTOR_USE_STATIC_CUDA_LAUNCHER: 0
         },
         path: "app",
         message: [
