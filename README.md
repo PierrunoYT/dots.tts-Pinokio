@@ -25,7 +25,8 @@ First launch downloads model weights and runs a synthesis warmup — expect seve
 ### Windows notes
 
 - `pynini` (a dependency of `WeTextProcessing`, used for text normalization) has no official Windows wheels, so the installer uses a prebuilt community wheel from [billwuhao/pynini-windows-wheels](https://github.com/billwuhao/pynini-windows-wheels) and installs `WeTextProcessing` without dependencies.
-- On NVIDIA GPUs, the installer adds [triton-windows](https://github.com/triton-lang/triton-windows) (Triton 3.4 for PyTorch 2.8) so `--optimize` (torch.compile acceleration) works on Windows too. On CPU/AMD Windows setups, `--optimize` is skipped.
+- On NVIDIA GPUs, the installer adds [triton-windows](https://github.com/triton-lang/triton-windows) (Triton 3.4 for PyTorch 2.8) for torch.compile support.
+- `--optimize` (torch.compile acceleration) is disabled on Windows by default: with the pinned torch 2.8, Dynamo crashes while tracing einops during the optimize warmup (`set.symmetric_difference` unsupported), which kills the server at startup. Older GPUs (GTX 10xx) also don't support bfloat16 compilation, so there is no speedup to gain there anyway. Generation itself works the same without it.
 - The launcher starts the app with `TORCHINDUCTOR_USE_STATIC_CUDA_LAUNCHER=0` to work around a PyTorch 2.8 Windows bug ([pytorch#162430](https://github.com/pytorch/pytorch/issues/162430)) where the static CUDA launcher crashes with `OverflowError: Python int too large to convert to C long` during torch.compile warmup.
 
 Use **Update** to pull the latest upstream code. Use **Reset** to remove the cloned `app` folder and reinstall from scratch.

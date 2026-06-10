@@ -21,7 +21,7 @@ module.exports = {
         },
         path: "app",
         message: [
-          "python apps/gradio/app.py --model-name-or-path rednote-hilab/dots.tts-base --host 127.0.0.1 --port {{local.port}}{{platform === 'win32' && gpu !== 'nvidia' ? '' : ' --optimize'}}",
+          "python apps/gradio/app.py --model-name-or-path rednote-hilab/dots.tts-base --host 127.0.0.1 --port {{local.port}}{{platform === 'win32' ? '' : ' --optimize'}}",
         ],
         on: [{
           event: "/(http:\\/\\/[0-9.:]+)/",
