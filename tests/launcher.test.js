@@ -4,6 +4,7 @@ const vm = require('node:vm')
 const launcher = require('../pinokio')
 const install = require('../install')
 const update = require('../update')
+const start = require('../start')
 
 function enabled(step, files, platform = 'win32') {
   if (!step.when) return true
@@ -73,4 +74,17 @@ test('completed installs transition from Start to terminal to Web UI', async () 
   const items = await menu(files, ['start.js'], { url: 'http://127.0.0.1:7860' })
   assert.equal(items[0].href, 'http://127.0.0.1:7860')
   assert.equal(items[0].default, true)
+})
+
+test('server readiness captures the URL and preserves the allocated port', () => {
+  const shell = start.run.find(step => step.method === 'shell.run')
+  const pattern = shell.params.on[0].event
+  const regex = new RegExp(pattern.slice(1, -1))
+  const event = regex.exec('Running on local URL:  http://127.0.0.1:54321')
+  assert.equal(event[1], 'http://127.0.0.1:54321')
+  const url = vm.runInNewContext(start.run.at(-1).params.url.slice(2, -2), { input: { event } })
+  assert.equal(url, 'http://127.0.0.1:54321')
+  assert.equal(start.daemon, true)
+  assert.equal(shell.params.on[0].done, true)
+  assert.match(shell.params.message[0], /--host 127\.0\.0\.1 --port \{\{local.port\}\}/)
 })

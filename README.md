@@ -22,14 +22,23 @@ This launcher installs [rednote-hilab/dots.tts](https://github.com/rednote-hilab
 
 First launch downloads model weights and runs a synthesis warmup — expect several minutes before the UI is ready.
 
+The launcher checks the installed PyTorch runtime before loading the model. It uses bfloat16 on compatible CUDA/ROCm devices and float32 on CPU or GPUs without bfloat16 support. Compilation is enabled only on compatible GPUs outside Windows. CPU inference (including the upstream runtime's current Mac path) can be slow and needs more memory.
+
+The pinned packages target Windows x64, Linux with a compatible PyTorch wheel, and Apple Silicon Macs. Intel Macs and native Windows ARM64 environments are not supported by this dependency setup. The NVIDIA CUDA 12.8 wheels require compute capability 7.0 or newer; GTX 10-series cards need a different PyTorch build and are not supported by this installer.
+
 ### Windows notes
 
 - `pynini` (a dependency of `WeTextProcessing`, used for text normalization) has no official Windows wheels, so the installer uses a prebuilt community wheel from [billwuhao/pynini-windows-wheels](https://github.com/billwuhao/pynini-windows-wheels) and installs `WeTextProcessing` without dependencies.
+- The Windows wheel requires x64 Python 3.10; the installer creates that Python environment. Existing environments created with another Python version need a Reset and fresh Install.
 - On NVIDIA GPUs, the installer adds [triton-windows](https://github.com/triton-lang/triton-windows) (Triton 3.4 for PyTorch 2.8) for torch.compile support.
-- `--optimize` (torch.compile acceleration) is disabled on Windows by default: with the pinned torch 2.8, Dynamo crashes while tracing einops during the optimize warmup (`set.symmetric_difference` unsupported), which kills the server at startup. Older GPUs (GTX 10xx) also don't support bfloat16 compilation, so there is no speedup to gain there anyway. Generation itself works the same without it.
+- `--optimize` (torch.compile acceleration) is disabled on Windows by default: with the pinned torch 2.8, Dynamo crashes while tracing einops during the optimize warmup (`set.symmetric_difference` unsupported), which kills the server at startup.
 - The launcher starts the app with `TORCHINDUCTOR_USE_STATIC_CUDA_LAUNCHER=0` to work around a PyTorch 2.8 Windows bug ([pytorch#162430](https://github.com/pytorch/pytorch/issues/162430)) where the static CUDA launcher crashes with `OverflowError: Python int too large to convert to C long` during torch.compile warmup.
 
-Use **Update** to pull the latest upstream code. Use **Reset** to remove the cloned `app` folder and reinstall from scratch.
+Use **Update** to pull the launcher and upstream code and rerun the complete dependency installation. Updates use fast-forward pulls and stop if local Git history has diverged.
+
+Use **Install** again to repair an interrupted installation without recloning. Start appears only after installation finishes successfully. Existing installations from older launcher versions need to run Install once to create the completion marker.
+
+**Reset** deletes the entire cloned `app` folder, including its environment and any generated audio or custom files inside it. Back up files you want to keep, then click **Install** after Reset to reinstall.
 
 ## CLI (inside Pinokio terminal)
 
@@ -49,10 +58,12 @@ dots.tts \
 ```python
 from dots_tts.runtime import DotsTtsRuntime
 import soundfile as sf
+import torch
 
 runtime = DotsTtsRuntime.from_pretrained(
     "rednote-hilab/dots.tts-base",
-    precision="bfloat16",
+    precision=("bfloat16" if torch.cuda.is_available()
+               and torch.cuda.is_bf16_supported(including_emulation=False) else "float32"),
 )
 
 result = runtime.generate(
@@ -70,21 +81,22 @@ sf.write("output.wav", result["audio"].float().cpu().squeeze().numpy(), result["
 
 When the app is running, Pinokio exposes a local URL (shown as **Open Web UI**). Replace `BASE_URL` with that address.
 
+These examples target the default UI of the current [upstream Gradio app](https://github.com/rednote-hilab/dots.tts/blob/main/apps/gradio/app.py). Debug mode exposes additional parameters; use `view_api()` or the UI's **Use via API** page to inspect your installed version. Client examples upload local audio using Gradio's file helpers rather than passing a client-side path to the server.
+
 ### JavaScript
 
 ```javascript
-import { Client } from "@gradio/client";
+import { Client, handle_file } from "@gradio/client";
+import { readFile } from "node:fs/promises";
 
 const client = await Client.connect("BASE_URL");
+const audio = new Blob([await readFile("/path/to/reference.wav")], { type: "audio/wav" });
 const result = await client.predict("/run_synthesis", {
   text: "Hello, this is a quick speech synthesis test.",
-  synthesis_mode: "tts",
-  prompt_audio_path: "/path/to/reference.wav",
+  prompt_audio_path: handle_file(audio),
   prompt_text: "The exact transcript of the reference audio.",
-  ode_method: "euler",
   num_steps: 10,
   guidance_scale: 1.2,
-  speaker_scale: 1.5,
   normalize_text: false,
   seed: 42,
 });
@@ -94,18 +106,15 @@ console.log(result.data);
 ### Python
 
 ```python
-from gradio_client import Client
+from gradio_client import Client, handle_file
 
 client = Client("BASE_URL")
 result = client.predict(
     text="Hello, this is a quick speech synthesis test.",
-    synthesis_mode="tts",
-    prompt_audio_path="/path/to/reference.wav",
+    prompt_audio_path=handle_file("/path/to/reference.wav"),
     prompt_text="The exact transcript of the reference audio.",
-    ode_method="euler",
     num_steps=10,
     guidance_scale=1.2,
-    speaker_scale=1.5,
     normalize_text=False,
     seed=42,
     api_name="/run_synthesis",
@@ -121,13 +130,28 @@ Discover the Gradio API schema:
 curl -s BASE_URL/gradio_api/info
 ```
 
-Then POST to the synthesis endpoint (exact path from the schema above):
+First upload the reference audio (these multiline commands use Bash syntax):
+
+```bash
+curl -f -X POST "BASE_URL/gradio_api/upload" \
+  -F "files=@/path/to/reference.wav"
+```
+
+Copy the returned server-side path into `UPLOADED_PATH` below, preserving JSON escaping, then submit the request. The default UI exposes seven inputs; debug-only state parameters are omitted:
 
 ```bash
 curl -X POST "BASE_URL/gradio_api/call/run_synthesis" \
   -H "Content-Type: application/json" \
-  -d '{"data":["Hello world","tts",{"path":"/path/to/reference.wav"},"transcript","euler",10,1.2,1.5,false,42]}'
+  -d '{"data":["Hello world",{"path":"UPLOADED_PATH","meta":{"_type":"gradio.FileData"}},"transcript",10,1.2,false,42]}'
 ```
+
+The response contains an `event_id`, not the generated audio. Replace `EVENT_ID` with that value to wait for the result:
+
+```bash
+curl -N "BASE_URL/gradio_api/call/run_synthesis/EVENT_ID"
+```
+
+The completion event contains the generated audio's file information, including its download URL.
 
 ## Recommended settings
 
@@ -135,7 +159,16 @@ curl -X POST "BASE_URL/gradio_api/call/run_synthesis" \
 |---------|-------|-------|
 | Num steps | 10–32 | Higher = better quality, slower |
 | Guidance scale | 1.2 | Standard CFG; raise modestly for stronger adherence |
-| Precision | bfloat16 | Default at startup |
+| Precision | Automatic | bfloat16 on compatible GPUs; float32 otherwise |
+
+## Development checks
+
+Run the launcher regression checks without downloading model weights:
+
+```bash
+node --test tests/launcher.test.js
+python -m unittest discover -s tests -p "test_*.py"
+```
 
 ## License
 
