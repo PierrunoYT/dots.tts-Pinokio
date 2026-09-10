@@ -1,6 +1,12 @@
 module.exports = {
   run: [
     {
+      when: "{{exists('app/.installed')}}",
+      method: "fs.rm",
+      params: { path: "app/.installed" }
+    },
+    {
+      when: "{{!exists('app')}}",
       method: "shell.run",
       params: {
         message: [
@@ -48,6 +54,7 @@ module.exports = {
       method: "shell.run",
       params: {
         venv: "env",
+        venv_python: "3.10",
         path: "app",
         message: [
           "uv pip install -e . -c constraints/recommended.txt",
@@ -69,6 +76,13 @@ module.exports = {
       method: "fs.link",
       params: {
         venv: "app/env"
+      }
+    },
+    {
+      method: "fs.write",
+      params: {
+        path: "app/.installed",
+        text: "Installation completed successfully.\n"
       }
     },
   ]

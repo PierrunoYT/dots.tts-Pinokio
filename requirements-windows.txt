@@ -2,7 +2,7 @@ transformers>=4.57.0
 huggingface-hub
 loguru
 langcodes[data]
-gradio
+gradio>=6.17,<7
 einops
 librosa>=0.11.0
 soundfile>=0.13.1

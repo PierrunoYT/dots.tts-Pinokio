@@ -3,3 +3,5 @@ node_modules
 .DS_Store
 *.wav
 *.mp3
+logs/
+__pycache__/

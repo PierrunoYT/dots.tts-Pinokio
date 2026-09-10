@@ -3,37 +3,20 @@ module.exports = {
     {
       method: "shell.run",
       params: {
-        message: "git pull"
+        message: "git pull --ff-only"
       }
     },
     {
+      when: "{{exists('app/.git')}}",
       method: "shell.run",
       params: {
         path: "app",
-        message: "git pull"
+        message: "git pull --ff-only"
       }
     },
     {
-      when: "{{platform === 'win32'}}",
-      method: "shell.run",
-      params: {
-        venv: "env",
-        path: "app",
-        message: [
-          "uv pip install -e . --no-deps -c constraints/recommended.txt",
-        ]
-      }
-    },
-    {
-      when: "{{platform !== 'win32'}}",
-      method: "shell.run",
-      params: {
-        venv: "env",
-        path: "app",
-        message: [
-          "uv pip install -e . -c constraints/recommended.txt",
-        ]
-      }
+      method: "script.start",
+      params: { uri: "install.js" }
     },
   ]
 }

@@ -1,19 +1,20 @@
 module.exports = {
   version: "5.0",
   menu: async (kernel, info) => {
-    let installed = info.exists("app/env")
+    let installed = info.exists("app/env") && info.exists("app/.installed")
     let running = {
       install: info.running("install.js"),
       start: info.running("start.js"),
       update: info.running("update.js"),
       reset: info.running("reset.js")
     }
-    if (running.install) {
+    if (running.update || running.reset || running.install) {
+      const action = running.update ? "update" : running.reset ? "reset" : "install"
       return [{
         default: true,
         icon: "fa-solid fa-plug",
-        text: "Installing",
-        href: "install.js",
+        text: { install: "Installing", update: "Updating", reset: "Resetting" }[action],
+        href: `${action}.js`,
       }]
     } else if (installed) {
       if (running.start) {
@@ -37,20 +38,6 @@ module.exports = {
             href: "start.js",
           }]
         }
-      } else if (running.update) {
-        return [{
-          default: true,
-          icon: 'fa-solid fa-terminal',
-          text: "Updating",
-          href: "update.js",
-        }]
-      } else if (running.reset) {
-        return [{
-          default: true,
-          icon: 'fa-solid fa-terminal',
-          text: "Resetting",
-          href: "reset.js",
-        }]
       } else {
         return [{
           default: true,
@@ -77,7 +64,11 @@ module.exports = {
         icon: "fa-solid fa-plug",
         text: "Install",
         href: "install.js",
-      }]
+      }, ...(info.exists("app") ? [{
+        icon: "fa-regular fa-circle-xmark",
+        text: "Reset",
+        href: "reset.js",
+      }] : [])]
     }
   }
 }
