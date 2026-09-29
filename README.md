@@ -50,8 +50,11 @@ dots.tts \
   --text "Hello, this is a zero-shot voice cloning demonstration." \
   --prompt-audio /path/to/reference.wav \
   --prompt-text "The exact transcript of the reference audio." \
+  --precision bfloat16 \
   --output clone.wav
 ```
+
+The CLI does not pick precision automatically. Keep `bfloat16` on compatible CUDA/ROCm GPUs and use `--precision float32` on CPU (including Macs) or GPUs without bfloat16 support.
 
 ## Python API
 
