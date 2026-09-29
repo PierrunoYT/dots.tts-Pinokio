@@ -10,7 +10,9 @@ def runtime_args(torch, platform):
     # currently uses CPU on Macs, even when MPS is available.
     accelerated = torch.cuda.is_available()
     bf16 = accelerated and torch.cuda.is_bf16_supported(including_emulation=False)
-    args = ["--precision", "bfloat16" if bf16 else "float32"]
+    precision = "bfloat16" if bf16 else "float32"
+    # Upstream reports --default-precision separately; keep it consistent.
+    args = ["--precision", precision, "--default-precision", precision]
     if bf16 and platform != "win32":
         args.append("--optimize")
     return args

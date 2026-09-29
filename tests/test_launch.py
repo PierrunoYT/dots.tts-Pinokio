@@ -15,7 +15,7 @@ class RuntimeArgsTests(unittest.TestCase):
             launch.main()
             app = str(launch.Path(launch.__file__).resolve().parent / "app" / "apps" / "gradio" / "app.py")
             run.assert_called_once_with(app, run_name="__main__")
-            self.assertEqual(launch.sys.argv, [app, "--precision", "float32", "--port", "54321"])
+            self.assertEqual(launch.sys.argv, [app, "--precision", "float32", "--default-precision", "float32", "--port", "54321"])
 
     def test_cpu_does_not_probe_bf16_or_enable_compilation(self):
         for platform in ("win32", "linux", "darwin"):
@@ -25,7 +25,7 @@ class RuntimeArgsTests(unittest.TestCase):
             )
             self.assertEqual(
                 runtime_args(SimpleNamespace(cuda=cuda), platform),
-                ["--precision", "float32"],
+                ["--precision", "float32", "--default-precision", "float32"],
             )
 
     def test_gpu_defaults_follow_precision_support_and_platform(self):
@@ -38,7 +38,8 @@ class RuntimeArgsTests(unittest.TestCase):
                     ))
                     args = runtime_args(torch, platform)
                     torch.cuda.is_bf16_supported.assert_called_once_with(including_emulation=False)
-                    self.assertEqual(args[1], "bfloat16" if bf16 else "float32")
+                    precision = "bfloat16" if bf16 else "float32"
+                    self.assertEqual(args[:4], ["--precision", precision, "--default-precision", precision])
                     self.assertEqual("--optimize" in args, bf16 and platform != "win32")
 
 
