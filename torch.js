@@ -23,7 +23,7 @@ module.exports = {
         "path": "{{args && args.path ? args.path : '.'}}",
         "message": [
           "uv pip install torch==2.8.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/cu128 --force-reinstall",
-          "{{args && args.triton ? 'uv pip install triton' : ''}}"
+          "{{args && args.triton ? 'uv pip install triton==3.4.0' : ''}}"
         ]
       },
       "next": null

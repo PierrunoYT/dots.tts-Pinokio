@@ -5,6 +5,7 @@ const launcher = require('../pinokio')
 const install = require('../install')
 const update = require('../update')
 const start = require('../start')
+const torch = require('../torch')
 
 function enabled(step, files, platform = 'win32') {
   if (!step.when) return true
@@ -87,4 +88,13 @@ test('server readiness captures the URL and preserves the allocated port', () =>
   assert.equal(start.daemon, true)
   assert.equal(shell.params.on[0].done, true)
   assert.match(shell.params.message[0], /--host 127\.0\.0\.1 --port \{\{local.port\}\}/)
+})
+
+test('triton is pinned to the release matching torch 2.8', () => {
+  const steps = torch.run.filter(step => JSON.stringify(step).includes('triton'))
+  assert.equal(steps.length, 2)
+  for (const step of steps) {
+    const command = step.params.message[1]
+    assert.match(command, /triton(-windows)?==3\.4\.0/)
+  }
 })
